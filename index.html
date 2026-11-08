@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Winds AI Pro ⚡ — AI Podcast Player & RSS Feed Intelligence Studio</title>
+  <meta name="description" content="Next.js 15 & TypeScript Turnkey AI Podcast Player & RSS Reader Dashboard with instant executive summaries, chapter scrubbing, and knowledge feed curation. By Kip Tecnologia.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    if (typeof tailwind !== "undefined") { tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              200: '#ddd6fe',
+              300: '#c4b5fd',
+              400: '#a78bfa',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+              800: '#5b21b6',
+              900: '#4c1d95',
+            }
+          }
+        }
+      }
+    };
+  }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @keyframes wave-bounce {
+      0%, 100% { height: 4px; }
+      50% { height: 26px; }
+    }
+    .wave-bar {
+      animation: wave-bounce 1.1s ease-in-out infinite;
+    }
+    .wave-bar:nth-child(2) { animation-delay: 0.15s; }
+    .wave-bar:nth-child(3) { animation-delay: 0.3s; }
+    .wave-bar:nth-child(4) { animation-delay: 0.45s; }
+    .wave-bar:nth-child(5) { animation-delay: 0.2s; }
+    .wave-bar:nth-child(6) { animation-delay: 0.35s; }
+    .wave-bar:nth-child(7) { animation-delay: 0.1s; }
+    .wave-bar:nth-child(8) { animation-delay: 0.5s; }
+
+    .paused .wave-bar {
+      animation-play-state: paused;
+      height: 6px !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-brand-500 selection:text-white transition-colors duration-200">
+
+  <!-- TOP HEADER -->
+  <header class="h-16 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between sticky top-0 z-40">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-500 to-purple-400 flex items-center justify-center shadow-lg shadow-brand-500/25">
+        <i class="fa-solid fa-bolt-lightning text-white text-lg"></i>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-extrabold text-base tracking-tight text-white flex items-center gap-1.5">
+            Winds AI <span class="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-brand-500 to-indigo-500 text-white font-black tracking-wider uppercase">Pro</span>
+          </span>
+          <span class="text-xs text-slate-400 hidden sm:inline-block">v2.0</span>
+        </div>
+        <div class="flex items-center gap-1.5 text-[11px] text-slate-400">
+          <span>By</span>
+          <a href="https://github.com/KipTecnologia" target="_blank" class="text-brand-400 hover:text-brand-300 font-semibold flex items-center gap-1">
+            Kip Tecnologia <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN NAV TABS -->
+    <nav class="hidden md:flex items-center p-1 bg-slate-950/80 rounded-xl border border-slate-800">
+      <button id="nav-tab-articles" onclick="switchView('articles')" class="px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-brand-600 text-white shadow-sm">
+        <i class="fa-solid fa-newspaper text-xs"></i> Artigos & RSS
+      </button>
+      <button id="nav-tab-podcasts" onclick="switchView('podcasts')" class="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-200 transition flex items-center gap-2">
+        <i class="fa-solid fa-podcast text-xs"></i> Podcasts & Áudio
+      </button>
+      <button id="nav-tab-bookmarks" onclick="switchView('bookmarks')" class="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-200 transition flex items-center gap-2">
+        <i class="fa-solid fa-bookmark text-xs"></i> Salvos (<span id="bookmark-count-badge">2</span>)
+      </button>
+    </nav>
+
+    <!-- RIGHT CONTROLS -->
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Search Input -->
+      <div class="relative hidden lg:block">
+        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-500"></i>
+        <input type="text" id="feed-search" placeholder="Search articles, feeds or podcast episodes... (/)" 
+               oninput="handleSearch(this.value)"
+               class="pl-9 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500 w-64 transition">
+      </div>
+
+      <button onclick="openWindsPricingModal()" class="px-3 py-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-400 text-xs font-bold flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-crown text-[10px]"></i> <span id="lbl-winds-btn-pricing">Pro Plans</span>
+      </button>
+      <!-- Add Feed Button -->
+      <button onclick="openModal('add-feed-modal')" class="px-3 py-1.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-plus text-[10px]"></i> <span id="lbl-winds-btn-add-feed" class="hidden sm:inline">Add Feed</span>
+      </button>
+
+      <!-- Theme Toggle -->
+      <button onclick="toggleWindsLanguage()" id="winds-lang-btn" class="px-2.5 py-1.5 rounded-xl border border-slate-800 bg-slate-950 text-slate-300 hover:text-white transition text-xs font-bold flex items-center gap-1 shadow-sm" title="Toggle English / Português">
+          <span id="winds-lang-flag">🇧🇷</span> <span id="winds-lang-label">PT</span>
+        </button>
+        <button onclick="toggleTheme()" class="p-2 rounded-xl border border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200 hover:border-slate-700 transition" title="Alternar Modo Escuro / Claro">
+        <i id="theme-icon" class="fa-solid fa-moon text-sm"></i>
+      </button>
+
+      <!-- Gumroad CTA -->
+      <a href="https://rancharia.gumroad.com" target="_blank" class="px-3 sm:px-4 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-extrabold text-xs shadow-lg shadow-brand-500/25 flex items-center gap-1.5 transition hover:scale-[1.02] active:scale-[0.98]">
+        <i class="fa-solid fa-crown text-amber-300 text-[11px]"></i>
+        <span id="lbl-winds-btn-getcode">Get Code ($49)</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- MAIN APP CONTAINER -->
+  <main class="flex-1 flex overflow-hidden">
+
+    <!-- LEFT SIDEBAR: FEEDS & CHANNELS -->
+    <aside class="w-64 border-r border-slate-800 bg-slate-900/60 p-4 flex flex-col gap-5 overflow-y-auto hidden md:flex">
+      
+      <!-- Channels -->
+      <div>
+        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-2 flex items-center justify-between">
+          <span id="lbl-nav-channels">Intelligence Channels</span>
+          <span class="text-[10px] text-slate-400 font-mono">LIVE RSS</span>
+        </div>
+        <nav class="space-y-1">
+          <button onclick="filterCategory('all')" id="cat-all" class="w-full px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between bg-brand-500/15 text-brand-300 border border-brand-500/30 transition">
+            <span class="flex items-center gap-2.5">
+              <i class="fa-solid fa-layer-group text-brand-400"></i> <span id="lbl-cat-all">All Feeds</span>
+            </span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-300">12</span>
+          </button>
+          <button onclick="filterCategory('AI & ML')" id="cat-ai" class="w-full px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition">
+            <span class="flex items-center gap-2.5">
+              <i class="fa-solid fa-brain text-purple-400"></i> <span id="lbl-cat-ai">AI & Deep Learning</span>
+            </span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-300">4</span>
+          </button>
+          <button onclick="filterCategory('Tech & Startups')" id="cat-tech" class="w-full px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition">
+            <span class="flex items-center gap-2.5">
+              <i class="fa-solid fa-rocket text-indigo-400"></i> <span id="lbl-cat-tech">Startups & Venture</span>
+            </span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-300">3</span>
+          </button>
+          <button onclick="filterCategory('Productivity')" id="cat-prod" class="w-full px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition">
+            <span class="flex items-center gap-2.5">
+              <i class="fa-solid fa-laptop-code text-emerald-400"></i> <span id="lbl-cat-prod">Dev & Engineering</span>
+            </span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-300">3</span>
+          </button>
+          <button onclick="filterCategory('Finance & Crypto')" id="cat-fin" class="w-full px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition">
+            <span class="flex items-center gap-2.5">
+              <i class="fa-solid fa-coins text-amber-400"></i> <span id="lbl-cat-fin">Finance & Web3</span>
+            </span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-800 text-slate-300">2</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Live Sources -->
+      <div>
+        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 px-2 flex items-center justify-between">
+          <span id="lbl-nav-sources">Connected Sources</span>
+          <i class="fa-solid fa-circle-check text-emerald-400 text-[10px]"></i>
+        </div>
+        <div class="space-y-1.5 text-xs text-slate-300 px-2">
+          <div class="flex items-center justify-between py-1 border-b border-slate-800/60">
+            <span class="flex items-center gap-2"><i class="fa-brands fa-y-combinator text-orange-500"></i> Hacker News</span>
+            <span class="text-[10px] text-emerald-400 font-mono">1.2k req/h</span>
+          </div>
+          <div class="flex items-center justify-between py-1 border-b border-slate-800/60">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-microchip text-purple-400"></i> ArXiv AI Papers</span>
+            <span class="text-[10px] text-emerald-400 font-mono">Live</span>
+          </div>
+          <div class="flex items-center justify-between py-1 border-b border-slate-800/60">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-podcast text-pink-400"></i> Lex Fridman Pod</span>
+            <span class="text-[10px] text-emerald-400 font-mono">4k kbps</span>
+          </div>
+          <div class="flex items-center justify-between py-1">
+            <span class="flex items-center gap-2"><i class="fa-solid fa-chart-line text-blue-400"></i> Bloomberg Crypto</span>
+            <span class="text-[10px] text-emerald-400 font-mono">Live</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick AI Features card -->
+      <div class="mt-auto p-3.5 rounded-2xl bg-gradient-to-br from-brand-900/40 via-purple-900/20 to-slate-900 border border-brand-500/30 text-xs">
+        <div class="flex items-center gap-2 font-bold text-brand-300 mb-1">
+          <i class="fa-solid fa-wand-magic-sparkles text-brand-400"></i>
+          <span id="lbl-ai-card-title">AI Synthesis Engine v2.5</span>
+        </div>
+        <p id="lbl-ai-card-sub" class="text-[11px] text-slate-400 leading-relaxed mb-2.5">Executive briefs and audio chaptering powered by local and cloud LLM APIs.</p>
+        <div class="flex items-center justify-between text-[10px] text-slate-300 font-mono pt-2 border-t border-brand-500/20">
+          <span id="lbl-ai-latency">Average Latency:</span>
+          <span class="text-emerald-400 font-bold">140ms</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER FEED STREAM -->
+    <section class="flex-1 flex flex-col border-r border-slate-800 bg-slate-950 overflow-hidden">
+      <!-- Stream Header -->
+      <div class="h-12 border-b border-slate-800 px-4 sm:px-6 flex items-center justify-between bg-slate-900/40">
+        <div class="flex items-center gap-2">
+          <span id="stream-title" class="font-bold text-xs uppercase tracking-wider text-slate-300">
+            <span id="lbl-stream-title">Latest Articles & Feeds</span>
+          </span>
+          <span id="stream-count-badge" class="px-2 py-0.5 rounded-full bg-slate-800 text-[10px] font-mono text-slate-400 font-bold">
+            6 itens
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="refreshFeeds()" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 text-xs transition" title="Recarregar Feeds">
+            <i id="refresh-spinner" class="fa-solid fa-rotate"></i>
+          </button>
+          <span class="text-[11px] text-slate-400 hidden sm:inline"><span id="lbl-stream-sync" class="text-[11px] text-slate-400 hidden sm:inline">Synced 2m ago</span></span>
+        </div>
+      </div>
+
+      <!-- Feed Cards Container -->
+      <div id="feed-container" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+    <!-- RIGHT INSPECTOR: ARTICLE READER & AI SYNTHESIS PANE -->
+    <aside id="inspector-pane" class="w-full lg:w-[480px] xl:w-[540px] bg-slate-900/40 p-5 sm:p-6 flex flex-col gap-5 overflow-y-auto border-t lg:border-t-0 border-slate-800 hidden md:flex">
+      
+      <!-- Placeholder when nothing selected -->
+      <div id="inspector-placeholder" class="m-auto text-center py-16 text-slate-500">
+        <i class="fa-solid fa-book-open-reader text-4xl mb-3 text-slate-600"></i>
+        <h4 id="lbl-insp-empty-title" class="font-bold text-slate-300 text-sm">Select an Article or Episode</h4>
+        <p id="lbl-insp-empty-sub" class="text-xs text-slate-500 mt-1 max-w-xs mx-auto">Click any item in the feed to read distraction-free, stream audio, and generate AI synthesis.</p>
+      </div>
+
+      <!-- Content Inspector (populated via JS) -->
+      <div id="inspector-content" class="hidden flex-col gap-4">
+        <!-- Header Info -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span id="insp-category" class="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-brand-500/20 text-brand-300 border border-brand-500/30">
+              AI & ML
+            </span>
+            <div class="flex items-center gap-2">
+              <button onclick="toggleActiveBookmark()" id="insp-bookmark-btn" class="p-1.5 rounded-lg border border-slate-800 text-slate-400 hover:text-amber-400 transition" title="Salvar">
+                <i class="fa-regular fa-bookmark"></i>
+              </button>
+              <button onclick="copyArticleMarkdown()" class="p-1.5 rounded-lg border border-slate-800 text-slate-400 hover:text-brand-400 transition" title="Copiar em Markdown">
+                <i class="fa-solid fa-copy"></i>
+              </button>
+            </div>
+          </div>
+          <h2 id="insp-title" class="text-lg font-black text-white leading-snug">
+            Título do Artigo Selecionado
+          </h2>
+          <div class="flex items-center gap-3 mt-2 text-xs text-slate-400">
+            <span id="insp-source" class="font-semibold text-slate-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-globe text-brand-400"></i> Fonte
+            </span>
+            <span>•</span>
+            <span id="insp-time">Publicado há 2h</span>
+            <span>•</span>
+            <span id="insp-readtime">5 min leitura</span>
+          </div>
+        </div>
+
+        <!-- AI Executive Brief Section -->
+        <div class="p-4 rounded-2xl bg-gradient-to-br from-brand-950/80 via-slate-900 to-slate-950 border border-brand-500/30 shadow-xl shadow-brand-500/5">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-lg bg-brand-500/20 text-brand-300 flex items-center justify-center text-xs">
+                <i class="fa-solid fa-sparkles"></i>
+              </div>
+              <h3 class="font-black text-xs uppercase tracking-wider text-brand-200">
+                <span id="lbl-insp-ai-title">AI Executive Summary</span>
+              </h3>
+            </div>
+            <button onclick="regenerateAISummary()" class="text-[11px] font-semibold text-brand-400 hover:text-brand-300 flex items-center gap-1">
+              <i class="fa-solid fa-rotate-right text-[10px]"></i> <span id="lbl-insp-ai-regen">Regenerate</span>
+            </button>
+          </div>
+
+          <div id="insp-ai-loading" class="hidden py-6 text-center text-slate-400 text-xs">
+            <i class="fa-solid fa-circle-notch fa-spin text-brand-400 text-base mb-2"></i>
+            <p id="lbl-insp-ai-loading">Synthesizing key insights with AI...</p>
+          </div>
+
+          <div id="insp-ai-content">
+            <ul id="insp-bullet-points" class="space-y-2 text-xs text-slate-300 leading-relaxed mb-3">
+              <!-- bullets -->
+            </ul>
+            <div class="pt-3 border-t border-slate-800 flex items-center justify-between text-[11px]">
+              <span id="lbl-insp-sentiment-label" class="text-slate-400">Editorial Sentiment:</span>
+              <span id="insp-sentiment" class="font-bold text-emerald-400 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                Bullish / Alto Impacto
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clean Article Body / Podcast Chapters -->
+        <div id="insp-body-section" class="pt-2">
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            <span id="lbl-insp-body-title">Full Article (Focus Mode)</span>
+          </h4>
+          <div id="insp-body-text" class="text-xs text-slate-300 leading-relaxed space-y-3 font-serif sm:text-sm">
+            <!-- Full reading content -->
+          </div>
+        </div>
+
+        <!-- Podcast Chapters Timeline (visible only on podcast) -->
+        <div id="insp-podcast-chapters" class="hidden space-y-2 pt-2">
+          <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+            <span id="lbl-insp-chapters-title">Interactive Chapters</span>
+            <span class="text-[10px] text-brand-400 font-mono"><span id="lbl-insp-chapters-sub">Click to Jump</span></span>
+          </h4>
+          <div id="chapters-list" class="space-y-1.5">
+            <!-- chapters -->
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- FLOATING PERSISTENT AUDIO PLAYER -->
+  <div id="bottom-player" class="h-20 border-t border-slate-800 bg-slate-900/95 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between z-30 transition-all duration-300">
+    
+    <!-- Left: Track Metadata -->
+    <div class="flex items-center gap-3 w-1/4 min-w-[200px]">
+      <div id="player-thumb" class="w-12 h-12 rounded-xl bg-slate-800 bg-cover bg-center border border-slate-700/60 shadow-md flex-shrink-0" style="background-image: url('https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=150');"></div>
+      <div class="truncate">
+        <h5 id="player-title" class="font-extrabold text-xs text-white truncate">
+          AI Frontiers & Autonomous Agents
+        </h5>
+        <p id="player-author" class="text-[11px] text-slate-400 truncate">
+          Lex Fridman Podcast #422
+        </p>
+      </div>
+    </div>
+
+    <!-- Center: Playback Controls & Progress Bar -->
+    <div class="flex-1 max-w-xl flex flex-col items-center gap-1.5 px-4">
+      <div class="flex items-center gap-4">
+        <button onclick="skipPlayer(-15)" class="text-slate-400 hover:text-white text-xs transition" title="Voltar 15s">
+          <i class="fa-solid fa-rotate-left"></i> 15s
+        </button>
+        <button onclick="togglePlayPause()" id="play-btn" class="w-9 h-9 rounded-full bg-brand-600 hover:bg-brand-500 text-white flex items-center justify-center shadow-lg shadow-brand-500/30 transition hover:scale-105 active:scale-95">
+          <i id="play-icon" class="fa-solid fa-play text-xs pl-0.5"></i>
+        </button>
+        <button onclick="skipPlayer(30)" class="text-slate-400 hover:text-white text-xs transition" title="Avançar 30s">
+          30s <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+
+      <!-- Scrubber -->
+      <div class="w-full flex items-center gap-2">
+        <span id="player-current-time" class="text-[10px] text-slate-400 font-mono w-10 text-right">08:14</span>
+        <div onclick="seekPlayer(event)" class="flex-1 h-1.5 bg-slate-800 rounded-full cursor-pointer relative group">
+          <div id="player-progress-bar" class="h-full bg-gradient-to-r from-brand-500 to-indigo-500 rounded-full w-[28%] relative">
+            <div class="w-3 h-3 bg-white rounded-full absolute -right-1.5 -top-0.5 shadow-md scale-0 group-hover:scale-100 transition-transform"></div>
+          </div>
+        </div>
+        <span id="player-total-time" class="text-[10px] text-slate-400 font-mono w-10">48:30</span>
+      </div>
+    </div>
+
+    <!-- Right: Animated Equalizer & Speed Controls -->
+    <div class="flex items-center justify-end gap-3 w-1/4 min-w-[180px]">
+      
+      <!-- Audio Waveform Visualizer -->
+      <div id="audio-visualizer" class="hidden sm:flex items-center gap-0.5 h-7 px-2.5 py-1 rounded-xl bg-slate-950 border border-slate-800/80 paused">
+        <div class="w-1 bg-brand-400 rounded-full wave-bar"></div>
+        <div class="w-1 bg-indigo-400 rounded-full wave-bar"></div>
+        <div class="w-1 bg-purple-400 rounded-full wave-bar"></div>
+        <div class="w-1 bg-brand-400 rounded-full wave-bar"></div>
+        <div class="w-1 bg-indigo-400 rounded-full wave-bar"></div>
+        <div class="w-1 bg-purple-400 rounded-full wave-bar"></div>
+        <div class="w-1 bg-brand-400 rounded-full wave-bar"></div>
+        <div class="w-1 bg-indigo-400 rounded-full wave-bar"></div>
+      </div>
+
+      <!-- Speed Toggle -->
+      <button onclick="cycleSpeed()" id="speed-btn" class="px-2.5 py-1 rounded-lg border border-slate-800 bg-slate-950 text-[11px] font-mono font-bold text-slate-300 hover:text-white transition">
+        1.0x
+      </button>
+
+      <!-- Volume Icon -->
+      <button class="text-slate-400 hover:text-white text-xs transition">
+        <i class="fa-solid fa-volume-high"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ADD FEED MODAL -->
+  <div id="add-feed-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-extrabold text-white text-base flex items-center gap-2">
+          <i class="fa-solid fa-rss text-orange-400"></i> <span id="lbl-add-feed-title">Add RSS Feed or Podcast</span>
+        </h3>
+        <button onclick="closeModal('add-feed-modal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <p id="lbl-add-feed-desc" class="text-xs text-slate-400 leading-relaxed">Paste any valid RSS, Atom XML, or podcast URL to index and enable automated AI summaries.</p>
+      <div class="space-y-3">
+        <div>
+          <label class="text-[11px] font-bold text-slate-300 block mb-1">URL do Feed RSS / Podcast</label>
+          <input type="url" id="new-feed-url" placeholder="https://exemplo.com/feed.xml" 
+                 class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+        </div>
+        <div>
+          <label class="text-[11px] font-bold text-slate-300 block mb-1">Categoria de Destino</label>
+          <select id="new-feed-category" class="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+            <option value="AI & ML">IA & Machine Learning</option>
+            <option value="Tech & Startups">Startups & Venture Capital</option>
+            <option value="Productivity">Dev & Produtividade</option>
+            <option value="Finance & Crypto">Finanças & Web3</option>
+          </select>
+        </div>
+      </div>
+      <div class="pt-2 flex items-center justify-end gap-2">
+        <button onclick="closeModal('add-feed-modal')" class="px-4 py-2 rounded-xl border border-slate-800 text-xs font-semibold text-slate-400 hover:text-white transition">
+          <span id="lbl-add-feed-cancel">Cancel</span>
+        </button>
+        <button onclick="addNewFeed()" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-bold text-white shadow-lg shadow-brand-500/25 transition">
+          <span id="lbl-add-feed-connect">Connect Feed</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLICATION LOGIC & STATE -->
+  <script>
+    // State Database
+    const state = {
+      view: 'articles', // 'articles' | 'podcasts' | 'bookmarks'
+      categoryFilter: 'all',
+      searchQuery: '',
+      selectedItemId: 'art-1',
+      isPlaying: false,
+      playbackSeconds: 494, // 08:14
+      totalSeconds: 2910,   // 48:30
+      playbackSpeed: 1.0,
+      activeEpisode: null,
+      articles: [
+        {
+          id: 'art-1',
+          title: 'DeepSeek-V3 & LLM Scaling Laws: Como a Arquitetura MoE Reduz Custos em 80%',
+          source: 'ArXiv Machine Learning',
+          category: 'AI & ML',
+          time: 'Há 18 min',
+          readTime: '6 min',
+          bookmarked: true,
+          preview: 'Análise técnica da evolução dos modelos Mixture of Experts (MoE) com roteamento esparso e quantização FP8 nativa para inferência ultra-rápida.',
+          bullets: [
+            'Redução drástica de custo de treinamento via arquitetura Multi-head Latent Attention (MLA).',
+            'Desempenho comparável a modelos proprietários com menos de 30% do poder computacional.',
+            'Adoção massiva por desenvolvedores que buscam autonomia e auto-hospedagem de LLMs.',
+            'Impacto estrutural no mercado de chips e aceleração de clusters de inferência.'
+          ],
+          sentiment: 'Altamente Bullish (Revolução em Custos)',
+          content: `A recente publicação técnica sobre arquiteturas MoE (Mixture-of-Experts) estabelece um novo padrão no custo-benefício para treinamento e inferência de modelos fundacionais.\n\nTradicionalmente, modelos densos ativam 100% de seus parâmetros em cada token processado. Com o roteamento esparso introduzido na nova geração, apenas 37 bilhões dos 671 bilhões de parâmetros totais são ativados por token, garantindo throughput altíssimo sem perda de precisão contextual.\n\nPara desenvolvedores e fundadores de micro-SaaS, esse avanço viabiliza recursos de IA em larga escala com margens brutas superiores a 85%, transformando a economia dos produtos digitais modernos.`
+        },
+        {
+          id: 'art-2',
+          title: 'O Guia Definitivo de Micro-SaaS em 2026: Da Concepção Técnica ao Primeiro $10k MRR',
+          source: 'Hacker News Frontpage',
+          category: 'Tech & Startups',
+          time: 'Há 45 min',
+          readTime: '8 min',
+          bookmarked: true,
+          preview: 'Como pequenos estúdios de software estão construindo e escalando produtos digitais de alta fidelidade com arquiteturas turnkey modernas.',
+          bullets: [
+            'Arquiteturas modernas em Next.js 15 e TypeScript permitem lançamentos 5x mais rápidos no mercado.',
+            'Foco obsessivo em UI de alta fidelidade e experiência do usuário (DevEx e UX).',
+            'Modelos de monetização turnkey de pagamento único eliminam churn e suporte pesado.',
+            'Distribuição orgânica apoiada em produtos focados na resolução de dores pontuais.'
+          ],
+          sentiment: 'Bullish (Modelo Estratégico Comprovado)',
+          content: `O ecossistema de software passou por uma virada crucial: a velocidade de execução e a experiência do usuário superam a complexidade estrutural de sistemas monolíticos antigos.\n\nCom ferramentas modernas baseadas em React 19, TypeScript e Tailwind CSS, fundadores e estúdios digitais conseguem colocar produtos turnkey em produção em tempo recorde.\n\nAo focar em entregar valor imediato com interfaces refinadas e código pronto para uso, novos negócios digitais atingem tração consistente desde o primeiro dia de lançamento.`
+        },
+        {
+          id: 'art-3',
+          title: 'Next.js 15 Server Actions & React 19 Compiler: Análise de Performance em Produção',
+          source: 'Vercel Engineering Blog',
+          category: 'Productivity',
+          time: 'Há 2h',
+          readTime: '5 min',
+          bookmarked: false,
+          preview: 'Benchmarks detalhados demonstrando redução de 35% no tamanho do bundle de hidratação e eliminação total do boilerplate useMemo/useCallback.',
+          bullets: [
+            'O React 19 Compiler memoriza automaticamente componentes em tempo de compilação.',
+            'Server Actions eliminam a necessidade de camadas intermediárias de API REST para mutações simples.',
+            'Async Request APIs garantem compatibilidade com streaming incremental e edge runtime.',
+            'Tempo de carregamento inicial (First Contentful Paint) abaixo de 200ms em redes móveis.'
+          ],
+          sentiment: 'Neutro / Otimização Técnica',
+          content: `A versão 15 do Next.js aliada ao React 19 marca o fim dos ganchos manuais de otimização de renderização. O novo compilador analisa a árvore de sintaxe abstrata e memoriza automaticamente dependências de estado.\n\nEm testes de estresse com dashboards financeiros e visualizadores de dados em tempo real, a frequência de repaints caiu pela metade, garantindo uma fluidez de 60fps constante mesmo em dispositivos modestos.`
+        },
+        {
+          id: 'art-4',
+          title: 'Liquidez Global de Bitcoin e Ethereum: Impacto das Taxas de Juros nos Fluxos Institucionais',
+          source: 'Bloomberg Crypto Intelligence',
+          category: 'Finance & Crypto',
+          time: 'Há 3h',
+          readTime: '4 min',
+          bookmarked: false,
+          preview: 'Relatório institucional sobre o aumento na alocação de tesourarias corporativas e estratégias de arbitragem algorítmica automatizada.',
+          bullets: [
+            'Entradas líquidas semanais ultrapassam recordes históricos em fundos indexados.',
+            'Bots algorítmicos baseados em reversão à média (RSI/SuperTrend) superam estratégias de buy-and-hold.',
+            'Volatilidade implícita em mínimas sazonais favorece estratégias de Grid Trading automatizado.',
+            'Demanda corporativa por dashboards auditados de backtesting em tempo real.'
+          ],
+          sentiment: 'Bullish Institucional',
+          content: `O amadurecimento das ferramentas de trading automatizado reduziu o spread entre os principais livros de ofertas internacionais.\n\nSistemas automatizados de backtesting visual tornaram-se o padrão para validação de estratégias de risco antes do deploy de capital institucional em exchanges centralizadas e descentralizadas.`
+        }
+      ],
+      podcasts: [
+        {
+          id: 'pod-1',
+          title: 'Agentes Autônomos de IA, Arquiteturas Multi-Agente e o Futuro do Desenvolvimento',
+          podcastName: 'Lex Fridman Podcast #422',
+          host: 'Lex Fridman & Especialistas',
+          coverUrl: 'https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=200',
+          category: 'AI & Tech',
+          duration: '48:30',
+          durationSeconds: 2910,
+          publishedAt: 'Ontem',
+          preview: 'Discussão profunda sobre orquestração de subagentes, contexto de execução remota em VMs isoladas e a evolução da assistência de código.',
+          bullets: [
+            'Agentes autônomos com acesso a ferramentas terminais superam geradores estáticos de código.',
+            'O modelo de subagentes especializados reduz a poluição de contexto e melhora a taxa de sucesso.',
+            'Segurança em sandboxes e proxies de credenciais são requisitos mandatórios para IA em produção.'
+          ],
+          sentiment: 'Visão Futurista / Transformacional',
+          chapters: [
+            { title: 'Introdução e Panorama de Agentes', timestamp: '00:00', seconds: 0, summary: 'Apresentação e histórico dos últimos 18 meses.' },
+            { title: 'Subagentes e Delegação de Tarefas', timestamp: '08:14', seconds: 494, summary: 'Como dividir tarefas complexas entre pesquisadores e executores.' },
+            { title: 'Execução Segura em Ambientes Isolados', timestamp: '21:30', seconds: 1290, summary: 'O papel dos containers e proxys de credenciais.' },
+            { title: 'Monetização de Micro-SaaS com IA', timestamp: '34:45', seconds: 2085, summary: 'Estratégias de lançamento no mercado digital.' },
+            { title: 'Conclusão e Previsões para 2027', timestamp: '44:10', seconds: 2650, summary: 'Considerações finais.' }
+          ]
+        },
+        {
+          id: 'pod-2',
+          title: 'A História da Stripe e o Império Invisível dos Pagamentos Digitais',
+          podcastName: 'Acquired Podcast',
+          host: 'Ben Gilbert & David Rosenthal',
+          coverUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?w=200',
+          category: 'Business',
+          duration: '1:12:40',
+          durationSeconds: 4360,
+          publishedAt: 'Há 3 dias',
+          preview: 'A saga de como 7 linhas de código transformaram o comércio global e criaram o padrão ouro de APIs para desenvolvedores.',
+          bullets: [
+            'A obsessão pela experiência do desenvolvedor (DevEx) foi a alavanca primária de crescimento.',
+            'Documentação interativa com snippets executáveis converteu 90% dos primeiros usuários.',
+            'A importância de transformar infraestrutura complexa em componentes visuais simples.'
+          ],
+          sentiment: 'Inspiração Empresarial',
+          chapters: [
+            { title: 'Os Primeiros Dias em Palo Alto', timestamp: '00:00', seconds: 0, summary: 'Início da jornada.' },
+            { title: 'O Lançamento das 7 Linhas de Código', timestamp: '14:20', seconds: 860, summary: 'A revolução do checkout.' },
+            { title: 'Escalando para Bilhões', timestamp: '38:00', seconds: 2280, summary: 'Construção da infraestrutura.' }
+          ]
+        }
+      ]
+    };
+
+    // Render Feeds
+    function renderFeedStream() {
+      const container = document.getElementById('feed-container');
+      container.innerHTML = '';
+
+      let items = [];
+      if (state.view === 'articles') {
+        items = state.articles;
+      } else if (state.view === 'podcasts') {
+        items = state.podcasts;
+      } else if (state.view === 'bookmarks') {
+        items = state.articles.filter(a => a.bookmarked);
+      }
+
+      // Filter by category
+      if (state.categoryFilter !== 'all') {
+        items = items.filter(i => i.category === state.categoryFilter);
+      }
+
+      // Filter by search
+      if (state.searchQuery.trim()) {
+        const q = state.searchQuery.toLowerCase();
+        items = items.filter(i => (i.title + ' ' + (i.preview || '') + ' ' + (i.source || i.podcastName || '')).toLowerCase().includes(q));
+      }
+
+      document.getElementById('stream-count-badge').innerText = `${items.length} itens`;
+
+      if (items.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-16 text-slate-500">
+            <i class="fa-solid fa-filter-circle-xmark text-3xl mb-2 text-slate-600"></i>
+            <p class="text-xs">Nenhum item encontrado com os filtros atuais.</p>
+          </div>
+        `;
+        return;
+      }
+
+      items.forEach(item => {
+        const isSelected = item.id === state.selectedItemId;
+        const isPod = state.view === 'podcasts' || item.duration !== undefined;
+
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-2xl border transition cursor-pointer ${
+          isSelected 
+            ? 'bg-slate-900 border-brand-500/60 shadow-lg shadow-brand-500/10 ring-1 ring-brand-500/40' 
+            : 'bg-slate-900/50 hover:bg-slate-900/90 border-slate-800/80 hover:border-slate-700'
+        }`;
+        card.onclick = () => selectItem(item.id);
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1">
+              <div class="flex items-center gap-2 mb-1.5">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                  item.category.includes('AI') ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' :
+                  item.category.includes('Tech') ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20' :
+                  item.category.includes('Finance') ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                  'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                }">
+                  ${item.category}
+                </span>
+                <span class="text-[11px] text-slate-400 font-medium truncate">
+                  ${item.source || item.podcastName}
+                </span>
+              </div>
+              <h4 class="font-extrabold text-sm text-white leading-snug line-clamp-2">
+                ${item.title}
+              </h4>
+              <p class="text-xs text-slate-400 mt-1.5 line-clamp-2 leading-relaxed">
+                ${item.preview}
+              </p>
+              <div class="flex items-center gap-3 mt-3 text-[11px] text-slate-400 font-medium">
+                <span><i class="fa-regular fa-clock text-[10px]"></i> ${item.time || item.publishedAt}</span>
+                <span>•</span>
+                <span><i class="${isPod ? 'fa-solid fa-headphones' : 'fa-solid fa-book-open'} text-[10px]"></i> ${item.readTime || item.duration}</span>
+                <span class="ml-auto flex items-center gap-1 text-brand-400 font-semibold text-[11px]">
+                  <i class="fa-solid fa-sparkles text-[10px]"></i> Resumo IA
+                </span>
+              </div>
+            </div>
+            ${isPod ? `
+              <button onclick="event.stopPropagation(); playPodcast('${item.id}')" class="w-10 h-10 rounded-xl bg-brand-600/20 hover:bg-brand-600 text-brand-300 hover:text-white border border-brand-500/30 flex items-center justify-center transition flex-shrink-0">
+                <i class="fa-solid fa-play text-xs pl-0.5"></i>
+              </button>
+            ` : `
+              <button onclick="event.stopPropagation(); toggleBookmark('${item.id}')" class="p-2 text-slate-500 hover:text-amber-400 transition flex-shrink-0">
+                <i class="${item.bookmarked ? 'fa-solid fa-bookmark text-amber-400' : 'fa-regular fa-bookmark'}"></i>
+              </button>
+            `}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Select Item and Show Inspector
+    function selectItem(id) {
+      state.selectedItemId = id;
+      renderFeedStream();
+
+      const placeholder = document.getElementById('inspector-placeholder');
+      const content = document.getElementById('inspector-content');
+      placeholder.classList.add('hidden');
+      content.classList.remove('hidden');
+      content.classList.add('flex');
+
+      // Find item
+      const item = state.articles.find(a => a.id === id) || state.podcasts.find(p => p.id === id);
+      if (!item) return;
+
+      document.getElementById('insp-title').innerText = item.title;
+      document.getElementById('insp-category').innerText = item.category;
+      document.getElementById('insp-source').innerHTML = `<i class="fa-solid fa-globe text-brand-400"></i> ${item.source || item.podcastName}`;
+      document.getElementById('insp-time').innerText = item.time || item.publishedAt;
+      document.getElementById('insp-readtime').innerText = item.readTime ? `${item.readTime} de leitura` : `${item.duration} de áudio`;
+      document.getElementById('insp-sentiment').innerText = item.sentiment || 'Neutro / Informativo';
+
+      // Bookmark icon
+      const bBtn = document.getElementById('insp-bookmark-btn');
+      bBtn.innerHTML = `<i class="${item.bookmarked ? 'fa-solid fa-bookmark text-amber-400' : 'fa-regular fa-bookmark'}"></i>`;
+
+      // Bullets
+      const bulletsList = document.getElementById('insp-bullet-points');
+      bulletsList.innerHTML = '';
+      (item.bullets || []).forEach(b => {
+        const li = document.createElement('li');
+        li.className = 'flex items-start gap-2';
+        li.innerHTML = `<i class="fa-solid fa-circle-check text-brand-400 text-xs mt-1 flex-shrink-0"></i> <span>${b}</span>`;
+        bulletsList.appendChild(li);
+      });
+
+      // Body text vs Chapters
+      const bodySec = document.getElementById('insp-body-section');
+      const podChaptersSec = document.getElementById('insp-podcast-chapters');
+
+      if (item.content) {
+        bodySec.classList.remove('hidden');
+        podChaptersSec.classList.add('hidden');
+        document.getElementById('insp-body-text').innerHTML = item.content.split('\n\n').map(p => `<p>${p}</p>`).join('');
+      } else if (item.chapters) {
+        bodySec.classList.add('hidden');
+        podChaptersSec.classList.remove('hidden');
+        const chList = document.getElementById('chapters-list');
+        chList.innerHTML = '';
+        item.chapters.forEach(ch => {
+          const div = document.createElement('div');
+          div.className = 'p-2.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-brand-500/50 cursor-pointer transition flex items-center justify-between text-xs group';
+          div.onclick = () => {
+            state.playbackSeconds = ch.seconds;
+            updatePlayerUI();
+            if (!state.isPlaying) togglePlayPause();
+          };
+          div.innerHTML = `
+            <div class="flex items-center gap-2.5 truncate">
+              <span class="font-mono text-brand-400 font-bold text-[11px] group-hover:underline">${ch.timestamp}</span>
+              <span class="text-slate-200 truncate font-medium">${ch.title}</span>
+            </div>
+            <i class="fa-solid fa-play text-[10px] text-slate-500 group-hover:text-brand-400 transition"></i>
+          `;
+          chList.appendChild(div);
+        });
+      }
+    }
+
+    // Switch View
+    function switchView(viewName) {
+      state.view = viewName;
+      ['articles', 'podcasts', 'bookmarks'].forEach(v => {
+        const tab = document.getElementById(`nav-tab-${v}`);
+        if (v === viewName) {
+          tab.className = 'px-4 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-brand-600 text-white shadow-sm';
+        } else {
+          tab.className = 'px-4 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-slate-200 transition flex items-center gap-2';
+        }
+      });
+
+      const titleEl = document.getElementById('stream-title');
+      if (viewName === 'articles') titleEl.innerText = '<span id="lbl-stream-title">Latest Articles & Feeds</span>';
+      if (viewName === 'podcasts') titleEl.innerText = 'Podcasts & Transcrições IA';
+      if (viewName === 'bookmarks') titleEl.innerText = 'Itens Salvos & Highlights';
+
+      const firstItem = viewName === 'podcasts' ? state.podcasts[0] : state.articles[0];
+      if (firstItem) selectItem(firstItem.id);
+      renderFeedStream();
+    }
+
+    // Filter Category
+    function filterCategory(cat) {
+      state.categoryFilter = cat;
+      ['all', 'ai', 'tech', 'prod', 'fin'].forEach(c => {
+        const btn = document.getElementById(`cat-${c}`);
+        if (!btn) return;
+        const matches = (c === 'all' && cat === 'all') ||
+                        (c === 'ai' && cat === 'AI & ML') ||
+                        (c === 'tech' && cat === 'Tech & Startups') ||
+                        (c === 'prod' && cat === 'Productivity') ||
+                        (c === 'fin' && cat === 'Finance & Crypto');
+        if (matches) {
+          btn.className = 'w-full px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between bg-brand-500/15 text-brand-300 border border-brand-500/30 transition';
+        } else {
+          btn.className = 'w-full px-3 py-2 rounded-xl text-xs font-medium flex items-center justify-between text-slate-400 hover:bg-slate-800/60 hover:text-slate-200 transition';
+        }
+      });
+      renderFeedStream();
+    }
+
+    // Handle Search
+    function handleSearch(val) {
+      state.searchQuery = val;
+      renderFeedStream();
+    }
+
+    // Bookmarking
+    function toggleBookmark(id) {
+      const art = state.articles.find(a => a.id === id);
+      if (art) {
+        art.bookmarked = !art.bookmarked;
+        updateBookmarkCount();
+        renderFeedStream();
+        if (state.selectedItemId === id) selectItem(id);
+      }
+    }
+
+    function toggleActiveBookmark() {
+      if (state.selectedItemId) toggleBookmark(state.selectedItemId);
+    }
+
+    function updateBookmarkCount() {
+      const count = state.articles.filter(a => a.bookmarked).length;
+      document.getElementById('bookmark-count-badge').innerText = count;
+    }
+
+    // Regenerate AI Summary Simulator
+    function regenerateAISummary() {
+      const loading = document.getElementById('insp-ai-loading');
+      const content = document.getElementById('insp-ai-content');
+      loading.classList.remove('hidden');
+      content.classList.add('hidden');
+
+      setTimeout(() => {
+        loading.classList.add('hidden');
+        content.classList.remove('hidden');
+      }, 700);
+    }
+
+    // Copy Markdown
+    function copyArticleMarkdown() {
+      const item = state.articles.find(a => a.id === state.selectedItemId) || state.podcasts.find(p => p.id === state.selectedItemId);
+      if (!item) return;
+
+      const md = `# ${item.title}\n\n**Fonte:** ${item.source || item.podcastName}\n**Categoria:** ${item.category}\n\n## Resumo Executivo (IA)\n${(item.bullets || []).map(b => `- ${b}`).join('\n')}\n\n${item.content || item.preview}\n\n---\n*Exportado de Winds AI Pro por Kip Tecnologia*`;
+      navigator.clipboard.writeText(md).then(() => {
+        alert('Resumo copiado em Markdown para a área de transferência!');
+      });
+    }
+
+    // Player Controls
+    function togglePlayPause() {
+      state.isPlaying = !state.isPlaying;
+      const playIcon = document.getElementById('play-icon');
+      const visualizer = document.getElementById('audio-visualizer');
+
+      if (state.isPlaying) {
+        playIcon.className = 'fa-solid fa-pause text-xs';
+        visualizer.classList.remove('paused');
+      } else {
+        playIcon.className = 'fa-solid fa-play text-xs pl-0.5';
+        visualizer.classList.add('paused');
+      }
+    }
+
+    function playPodcast(id) {
+      const pod = state.podcasts.find(p => p.id === id);
+      if (!pod) return;
+
+      state.activeEpisode = pod;
+      document.getElementById('player-title').innerText = pod.title;
+      document.getElementById('player-author').innerText = pod.podcastName;
+      document.getElementById('player-total-time').innerText = pod.duration;
+      state.totalSeconds = pod.durationSeconds;
+      state.playbackSeconds = 0;
+      updatePlayerUI();
+
+      if (!state.isPlaying) togglePlayPause();
+      selectItem(id);
+    }
+
+    function skipPlayer(seconds) {
+      state.playbackSeconds = Math.max(0, Math.min(state.totalSeconds, state.playbackSeconds + seconds));
+      updatePlayerUI();
+    }
+
+    function seekPlayer(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const pos = (e.clientX - rect.left) / rect.width;
+      state.playbackSeconds = Math.floor(pos * state.totalSeconds);
+      updatePlayerUI();
+    }
+
+    function cycleSpeed() {
+      const speeds = [1.0, 1.25, 1.5, 2.0];
+      const curIdx = speeds.indexOf(state.playbackSpeed);
+      state.playbackSpeed = speeds[(curIdx + 1) % speeds.length];
+      document.getElementById('speed-btn').innerText = `${state.playbackSpeed.toFixed(1)}x`;
+    }
+
+    function formatTime(sec) {
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function updatePlayerUI() {
+      document.getElementById('player-current-time').innerText = formatTime(state.playbackSeconds);
+      const pct = (state.playbackSeconds / state.totalSeconds) * 100;
+      document.getElementById('player-progress-bar').style.width = `${pct}%`;
+    }
+
+    // Player Tick Timer
+    setInterval(() => {
+      if (state.isPlaying && state.playbackSeconds < state.totalSeconds) {
+        state.playbackSeconds += 1;
+        updatePlayerUI();
+      }
+    }, 1000);
+
+    // Refresh Feeds Simulator
+    function refreshFeeds() {
+      const spinner = document.getElementById('refresh-spinner');
+      spinner.classList.add('fa-spin');
+      setTimeout(() => {
+        spinner.classList.remove('fa-spin');
+      }, 800);
+    }
+
+    // Modal
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function addNewFeed() {
+      const url = document.getElementById('new-feed-url').value;
+      const cat = document.getElementById('new-feed-category').value;
+      if (!url) {
+        alert('Por favor informe a URL do feed.');
+        return;
+      }
+
+      state.articles.unshift({
+        id: 'art-' + Date.now(),
+        title: 'Novo Feed Conectado: Análise Automatizada em Tempo Real',
+        source: url.replace('https://', '').split('/')[0],
+        category: cat,
+        time: 'Agora mesmo',
+        readTime: '3 min',
+        bookmarked: false,
+        preview: 'Feed RSS validado com sucesso e sincronizado no pipeline de indexação da Kip Tecnologia.',
+        bullets: [
+          'Feed validado e indexado com sucesso no cluster de ingestão.',
+          'Pronto para geração de resumos executivos sob demanda.',
+          'Taxa de atualização configurada para 15 minutos.'
+        ],
+        sentiment: 'Novo Feed Ativo',
+        content: `O feed fornecido foi sincronizado e integrado ao pipeline do Winds AI Pro.\n\nNovos artigos serão processados e enriquecidos com metadados semânticos e resumos automáticos.`
+      });
+
+      closeModal('add-feed-modal');
+      renderFeedStream();
+      selectItem(state.articles[0].id);
+      document.getElementById('new-feed-url').value = '';
+    }
+
+    // Theme Toggle
+    function toggleTheme() {
+      const html = document.documentElement;
+      const icon = document.getElementById('theme-icon');
+      if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        icon.className = 'fa-solid fa-sun text-amber-500 text-sm';
+      } else {
+        html.classList.add('dark');
+        icon.className = 'fa-solid fa-moon text-slate-400 text-sm';
+      }
+    }
+
+    // Init
+    
+    
+    let currentWindsLang = 'en'; // DEFAULT IS ENGLISH
+
+    const windsDictionary = {
+      en: {
+        flag: "🇧🇷",
+        flagLabel: "PT",
+        searchPlaceholder: "Search articles, feeds or podcast episodes... (/)",
+        btnPricing: "Pro Plans",
+        btnAddFeed: "Add Feed",
+        btnGetCode: "Get Code ($49)",
+        navChannels: "Intelligence Channels",
+        catAll: "All Feeds",
+        catAi: "AI & Deep Learning",
+        catTech: "Startups & Venture",
+        catProd: "Dev & Engineering",
+        catFin: "Finance & Web3",
+        navSources: "Connected Sources",
+        aiCardTitle: "AI Synthesis Engine v2.5",
+        aiCardSub: "Executive briefs and audio chaptering powered by local and cloud LLM APIs.",
+        aiLatency: "Average Latency:",
+        streamTitle: "Latest Articles & Feeds",
+        streamSync: "Synced 2m ago",
+        inspEmptyTitle: "Select an Article or Episode",
+        inspEmptySub: "Click any item in the feed to read distraction-free, stream audio, and generate AI synthesis.",
+        inspAiTitle: "AI Executive Summary",
+        inspAiRegen: "Regenerate",
+        inspAiLoading: "Synthesizing key insights with AI...",
+        inspSentimentLabel: "Editorial Sentiment:",
+        inspBodyTitle: "Full Article (Focus Mode)",
+        inspChaptersTitle: "Interactive Chapters",
+        inspChaptersSub: "Click to Jump",
+        addFeedTitle: "Add RSS Feed or Podcast",
+        addFeedDesc: "Paste any valid RSS, Atom XML, or podcast URL to index and enable automated AI summaries.",
+        addFeedCancel: "Cancel",
+        addFeedConnect: "Connect Feed",
+        pricingTitle: "Winds AI Pro Commercial Plans",
+        pricingSub: "Stripe Checkout and recurring billing setup included",
+        planRec: "Subscription",
+        monthTitle: "Curator Pro Monthly",
+        monthPrice: "$19",
+        monthFreq: "/month",
+        f1: "Up to 50 Feeds & Podcasts",
+        f2: "Unlimited AI Summaries",
+        f3: "Audio Player with 2.5x Speed",
+        f4: "1-Click Notion & Markdown Export",
+        btnTestCheckout: "Test Stripe Checkout ($19)",
+        badgePopular: "Best Value",
+        lifeType: "One-time Payment",
+        lifeTitle: "Lifetime License",
+        lifePrice: "$89",
+        lifeFreq: "lifetime access",
+        lf1: "Unlimited Feeds Forever",
+        lf2: "Full TypeScript Source Code",
+        lf3: "0% Royalties / 100% Retained",
+        lf4: "Priority VIP Support",
+        btnBuyLife: "Acquire Lifetime License ($89)"
+      },
+      pt: {
+        flag: "🇺🇸",
+        flagLabel: "EN",
+        searchPlaceholder: "Buscar artigos, feeds ou episódios... (/)",
+        btnPricing: "Planos Pro",
+        btnAddFeed: "Adicionar Feed",
+        btnGetCode: "Obter Código ($49)",
+        navChannels: "Canais de Inteligência",
+        catAll: "Todos os Feeds",
+        catAi: "IA & Deep Learning",
+        catTech: "Startups & Venture",
+        catProd: "Dev & Engenharia",
+        catFin: "Finanças & Web3",
+        navSources: "Fontes Conectadas",
+        aiCardTitle: "Motor de IA v2.5",
+        aiCardSub: "Resumos executivos e extração de capítulos em áudio usando modelos de linguagem locais e API.",
+        aiLatency: "Latência Média:",
+        streamTitle: "Últimos Artigos & Feeds",
+        streamSync: "Sincronizado há 2m",
+        inspEmptyTitle: "Selecione um Artigo ou Episódio",
+        inspEmptySub: "Clique em qualquer item da lista para visualizar a leitura limpa, o player e gerar resumos com Inteligência Artificial.",
+        inspAiTitle: "Resumo Executivo com IA",
+        inspAiRegen: "Regenerar",
+        inspAiLoading: "Sintetizando tópicos com Inteligência Artificial...",
+        inspSentimentLabel: "Sentimento Editorial:",
+        inspBodyTitle: "Texto Completo (Modo Foco)",
+        inspChaptersTitle: "Capítulos Interativos",
+        inspChaptersSub: "Clique para Pular",
+        addFeedTitle: "Adicionar Feed RSS ou Podcast",
+        addFeedDesc: "Cole qualquer URL válida de RSS, Atom XML ou link de podcast para indexar e habilitar transcrições automáticas com IA.",
+        addFeedCancel: "Cancelar",
+        addFeedConnect: "Conectar Feed",
+        pricingTitle: "Planos Comerciais Winds AI Pro",
+        pricingSub: "Setup Stripe Checkout e cobrança recorrente prontos",
+        planRec: "Recorrente",
+        monthTitle: "Curador Pro Mensal",
+        monthPrice: "R$ 99",
+        monthFreq: "/mês",
+        f1: "Até 50 Feeds & Podcasts",
+        f2: "Resumos de IA Ilimitados",
+        f3: "Player de áudio com velocidade 2.5x",
+        f4: "Exportação direta para Notion",
+        btnTestCheckout: "Testar Checkout Stripe (R$ 99)",
+        badgePopular: "Mais Vendido",
+        lifeType: "Pagamento Único",
+        lifeTitle: "Licença Vitalícia",
+        lifePrice: "R$ 399",
+        lifeFreq: "vitalício",
+        lf1: "Feeds Ilimitados para sempre",
+        lf2: "Código-fonte TypeScript total",
+        lf3: "Zero custos de royalties",
+        lf4: "Suporte de Integração VIP",
+        btnBuyLife: "Adquirir Licença Vitalícia (R$ 399)"
+      }
+    };
+
+    function applyWindsUiLanguage(lang) {
+      const d = windsDictionary[lang];
+      if (!d) return;
+
+      const setT = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = text;
+      };
+
+      setT('winds-lang-flag', d.flag);
+      setT('winds-lang-label', d.flagLabel);
+      const searchInput = document.getElementById('feed-search');
+      if (searchInput) searchInput.placeholder = d.searchPlaceholder;
+
+      setT('lbl-winds-btn-pricing', d.btnPricing);
+      setT('lbl-winds-btn-add-feed', d.btnAddFeed);
+      setT('lbl-winds-btn-getcode', d.btnGetCode);
+
+      setT('lbl-nav-channels', d.navChannels);
+      setT('lbl-cat-all', d.catAll);
+      setT('lbl-cat-ai', d.catAi);
+      setT('lbl-cat-tech', d.catTech);
+      setT('lbl-cat-prod', d.catProd);
+      setT('lbl-cat-fin', d.catFin);
+
+      setT('lbl-nav-sources', d.navSources);
+      setT('lbl-ai-card-title', d.aiCardTitle);
+      setT('lbl-ai-card-sub', d.aiCardSub);
+      setT('lbl-ai-latency', d.aiLatency);
+
+      setT('lbl-stream-title', d.streamTitle);
+      setT('lbl-stream-sync', d.streamSync);
+
+      setT('lbl-insp-empty-title', d.inspEmptyTitle);
+      setT('lbl-insp-empty-sub', d.inspEmptySub);
+      setT('lbl-insp-ai-title', d.inspAiTitle);
+      setT('lbl-insp-ai-regen', d.inspAiRegen);
+      setT('lbl-insp-ai-loading', d.inspAiLoading);
+      setT('lbl-insp-sentiment-label', d.inspSentimentLabel);
+      setT('lbl-insp-body-title', d.inspBodyTitle);
+      setT('lbl-insp-chapters-title', d.inspChaptersTitle);
+      setT('lbl-insp-chapters-sub', d.inspChaptersSub);
+
+      setT('lbl-add-feed-title', d.addFeedTitle);
+      setT('lbl-add-feed-desc', d.addFeedDesc);
+      setT('lbl-add-feed-cancel', d.addFeedCancel);
+      setT('lbl-add-feed-connect', d.addFeedConnect);
+
+      setT('lbl-winds-pricing-title', d.pricingTitle);
+      setT('lbl-winds-pricing-sub', d.pricingSub);
+      setT('lbl-winds-plan-rec', d.planRec);
+      setT('lbl-winds-month-title', d.monthTitle);
+      setT('lbl-winds-month-price', d.monthPrice);
+      setT('lbl-winds-month-freq', d.monthFreq);
+      setT('lbl-winds-f1', d.f1);
+      setT('lbl-winds-f2', d.f2);
+      setT('lbl-winds-f3', d.f3);
+      setT('lbl-winds-f4', d.f4);
+      setT('lbl-winds-btn-test-checkout', d.btnTestCheckout);
+      setT('lbl-winds-badge-popular', d.badgePopular);
+      setT('lbl-winds-life-type', d.lifeType);
+      setT('lbl-winds-life-title', d.lifeTitle);
+      setT('lbl-winds-life-price', d.lifePrice);
+      setT('lbl-winds-life-freq', d.lifeFreq);
+      setT('lbl-winds-lf1', d.lf1);
+      setT('lbl-winds-lf2', d.lf2);
+      setT('lbl-winds-lf3', d.lf3);
+      setT('lbl-winds-lf4', d.lf4);
+      setT('lbl-winds-btn-buy-life', d.btnBuyLife);
+    }
+
+    function toggleWindsLanguage() {
+      currentWindsLang = currentWindsLang === 'en' ? 'pt' : 'en';
+      applyWindsUiLanguage(currentWindsLang);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      applyWindsUiLanguage('en');
+      renderFeedStream();
+      selectItem('art-1');
+    });
+  </script>
+
+  <!-- Winds AI Pro Pricing Modal -->
+  <div id="winds-pricing-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#0b1120] border border-slate-800 rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-crown"></i>
+          </div>
+          <div>
+            <h3 id="lbl-winds-pricing-title" class="text-sm font-bold text-white">Winds AI Pro Commercial Plans</h3>
+            <p id="lbl-winds-pricing-sub" class="text-[11px] text-slate-400">Stripe Checkout and recurring billing setup included</p>
+          </div>
+        </div>
+        <button onclick="closeWindsPricingModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-3.5 pt-1">
+        <!-- Monthly Plan -->
+        <div class="p-4 rounded-2xl border border-slate-800 bg-slate-900/60 flex flex-col justify-between space-y-3">
+          <div>
+            <span id="lbl-winds-plan-rec" class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Subscription</span>
+            <h4 id="lbl-winds-month-title" class="text-base font-extrabold text-white mt-0.5">Curator Pro Monthly</h4>
+            <div class="text-2xl font-black text-white mt-2"><span id="lbl-winds-month-price">$19</span> <span id="lbl-winds-month-freq" class="text-xs font-normal text-slate-400">/month</span></div>
+            <ul class="text-xs text-slate-400 space-y-1.5 mt-3">
+              <li class="flex items-center gap-1.5"><i class="fa-solid fa-check text-indigo-400 text-[10px]"></i> <span id="lbl-winds-f1">Up to 50 Feeds & Podcasts</span></li>
+              <li class="flex items-center gap-1.5"><i class="fa-solid fa-check text-indigo-400 text-[10px]"></i> <span id="lbl-winds-f2">Unlimited AI Summaries</span></li>
+              <li class="flex items-center gap-1.5"><i class="fa-solid fa-check text-indigo-400 text-[10px]"></i> <span id="lbl-winds-f3">Audio Player with 2.5x Speed</span></li>
+              <li class="flex items-center gap-1.5"><i class="fa-solid fa-check text-indigo-400 text-[10px]"></i> <span id="lbl-winds-f4">1-Click Notion & Markdown Export</span></li>
+            </ul>
+          </div>
+          <button onclick="simulateWindsCheckout('monthly')" class="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition">
+            <span id="lbl-winds-btn-test-checkout">Test Stripe Checkout ($19)</span>
+          </button>
+        </div>
+
+        <!-- Lifetime Plan -->
+        <div class="p-4 rounded-2xl border-2 border-indigo-500 bg-indigo-950/20 flex flex-col justify-between space-y-3 relative">
+          <span id="lbl-winds-badge-popular" class="absolute -top-2.5 right-3 bg-indigo-600 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-full shadow-sm">Best Value</span>
+          <div>
+            <span id="lbl-winds-life-type" class="text-[10px] font-bold uppercase tracking-wider text-indigo-400">One-time Payment</span>
+            <h4 id="lbl-winds-life-title" class="text-base font-extrabold text-white mt-0.5">Lifetime License</h4>
+            <div class="text-2xl font-black text-indigo-400 mt-2"><span id="lbl-winds-life-price">$89</span> <span id="lbl-winds-life-freq" class="text-xs font-normal text-slate-400">lifetime access</span></div>
+            <ul class="text-xs text-slate-400 space-y-1.5 mt-3">
+              <li class="flex items-center gap-1.5"><i class="fa-solid fa-check text-indigo-400 text-[10px]"></i> <span id="lbl-winds-lf1">Unlimited Feeds Forever</span></li>
+              <li class="flex items-center gap-1.5"><i class="fa-solid fa-check text-indigo-400 text-[10px]"></i> <span id="lbl-winds-lf2">Full TypeScript Source Code</span></li>
+              <li class="flex items-center gap-1.5"><i class="fa-solid fa-check text-indigo-400 text-[10px]"></i> <span id="lbl-winds-lf3">0% Royalties / 100% Retained</span></li>
+              <li class="flex items-center gap-1.5"><i class="fa-solid fa-check text-indigo-400 text-[10px]"></i> <span id="lbl-winds-lf4">Priority VIP Support</span></li>
+            </ul>
+          </div>
+          <button onclick="simulateWindsCheckout('lifetime')" class="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-sm">
+            <span id="lbl-winds-btn-buy-life">Acquire Lifetime License ($89)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openWindsPricingModal() {
+      document.getElementById('winds-pricing-modal').classList.remove('hidden');
+    }
+    function closeWindsPricingModal() {
+      document.getElementById('winds-pricing-modal').classList.add('hidden');
+    }
+    function simulateWindsCheckout(plan) {
+      if (currentWindsLang === 'en') {
+        alert(`[Stripe Checkout Demo]\n\nSelected Plan: ${plan === 'monthly' ? 'Curator Pro Monthly ($19/mo)' : 'Lifetime License ($89 one-time)'}\n\nIn the commercial boilerplate, this button redirects to a Stripe Checkout session via /api/stripe/checkout with instant webhook provisioning.`);
+      } else {
+        alert(`[Stripe Checkout Demonstrativo]\n\nPlano Selecionado: ${plan === 'monthly' ? 'Curador Pro Mensal (R$ 99/mês)' : 'Licença Vitalícia (R$ 399)'}\n\nNo código baixado pelo comprador, a aplicação conecta via /api/stripe/checkout com Webhooks de ativação de conta.`);
+      }
+    }
+  </script>
+
+</body>
+</html>
